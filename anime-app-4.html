@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Ma liste animé</title>
+<meta name="theme-color" content="#14110f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Anime" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2314110f'/%3E%3Ctext x='50' y='66' font-size='54' text-anchor='middle' fill='%23d98e3a' font-family='sans-serif'%3E%E2%9C%93%3C/text%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2314110f'/%3E%3Ctext x='50' y='66' font-size='54' text-anchor='middle' fill='%23d98e3a' font-family='sans-serif'%3E%E2%9C%93%3C/text%3E%3C/svg%3E" />
+<link rel="manifest" id="manifest-link" />
+<script>
+  // Register an inline Service Worker (required for Android install prompt)
+  if ('serviceWorker' in navigator) {
+    const swCode = `
+      self.addEventListener('install', e => self.skipWaiting());
+      self.addEventListener('activate', e => clients.claim());
+      self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response('Offline'))));
+    `;
+    const blob = new Blob([swCode], { type: 'application/javascript' });
+    const swUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl).catch(() => {});
+  }
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600&display=swap');
+  :root {
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'Space Grotesk', sans-serif;
+    --ink: #f1ebe0; --paper: #14110f; --paper-2: #1c1815; --rule: #3a322b; --accent: #d98e3a;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--paper); }
+  body { color: var(--ink); font-family: var(--font-body); padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); background-image: radial-gradient(circle at 15% 8%, rgba(217,142,58,0.07), transparent 40%), radial-gradient(circle at 85% 92%, rgba(217,142,58,0.05), transparent 40%); min-height: 100vh; }
+  .wrap { padding: 22px 16px 70px; max-width: 1100px; margin: 0 auto; }
+  .spin { animation: spin 1s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .top-bar { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom: 14px; }
+  .save-indicator { font-size: 10px; color: #6b6053; margin-top: 6px; }
+  .save-indicator.saved { color: #4a7c59; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+  h1 { font-family: var(--font-display); font-size: clamp(34px, 9vw, 50px); letter-spacing: 0.01em; margin: 0 0 4px; line-height: 0.95; }
+  .subtitle { color: #a99c8a; font-size: 13px; margin-bottom: 16px; line-height: 1.4; }
+  .stats-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: baseline; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 11px 0; margin-bottom: 16px; }
+  .stat { display: flex; align-items: baseline; gap: 5px; }
+  .stat-num { font-family: var(--font-display); font-size: 24px; }
+  .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: #8a7e6f; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  .filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tab { font-family: var(--font-body); font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--rule); background: transparent; color: #a99c8a; cursor: pointer; white-space: nowrap; }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #14110f; }
+  .search-add-row { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; flex: 1; min-width: 220px; }
+  .search-input { background: var(--paper-2); border: 1px solid var(--rule); border-radius: 999px; padding: 8px 14px; color: var(--ink); font-family: var(--font-body); font-size: 13px; flex: 1; min-width: 100px; outline: none; }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: #6b6053; }
+  .top-btns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+  .add-trigger { display: flex; align-items: center; gap: 6px; background: var(--accent); color: #14110f; border: none; border-radius: 999px; padding: 8px 16px; font-family: var(--font-body); font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .install-btn { display: flex; align-items: center; gap: 6px; background: transparent; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 999px; padding: 8px 16px; font-family: var(--font-body); font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; transition: background 0.15s, color 0.15s; }
+  .install-btn:hover, .install-btn:active { background: var(--accent); color: #14110f; }
+  .install-btn { display: flex; align-items: center; gap: 6px; background: transparent; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 999px; padding: 7px 14px; font-family: var(--font-body); font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; transition: background 0.15s, color 0.15s; }
+  .install-btn:hover { background: var(--accent); color: #14110f; }
+  .top-btns { display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
+  .card { background: var(--paper-2); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+  .card-art { position: relative; width: 100%; aspect-ratio: 2/3; background: #1c1815; overflow: hidden; }
+  .card-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(155deg, #2a2420, #1c1815); color: #8a7e6f; padding: 8px; text-align: center; gap: 6px; }
+  .placeholder span { font-size: 10px; line-height: 1.25; }
+  .card-actions { position: absolute; top: 5px; right: 5px; display: flex; flex-direction: column; gap: 4px; }
+  .action-btn { width: 24px; height: 24px; border-radius: 50%; background: rgba(20,17,15,0.82); border: none; color: #ddd2c2; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; line-height: 1; }
+  .action-btn:active { background: var(--accent); color: #14110f; }
+  .action-btn.del:active { background: #c1453d; color: #fff; }
+  .card-body { padding: 9px 9px 11px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+  .card-title { font-size: 12px; font-weight: 600; line-height: 1.22; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-progress { font-size: 10px; color: #8a7e6f; }
+  .status-pill { margin-top: auto; align-self: flex-start; display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 4px 9px; border-radius: 999px; border: 1px solid; cursor: pointer; font-family: var(--font-body); background: transparent; }
+  .empty-state { margin: 60px auto; text-align: center; color: #6b6053; font-size: 13px; }
+  .card-eps { font-size: 10px; color: #a99c8a; display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:3px; padding-top:5px; border-top:1px solid rgba(58,50,43,0.6); }
+  .seasons-badge { background: rgba(217,142,58,0.15); color: #d98e3a; font-weight:700; padding: 2px 6px; border-radius:4px; font-size:9px; }
+  .eps-badge { background: rgba(161,150,138,0.12); color: #a99c8a; padding: 2px 6px; border-radius:4px; font-size:9px; }
+  .airing-badge { background: rgba(224,85,85,0.15); color: #e05555; font-weight:700; font-size:9px; padding:2px 6px; border-radius:4px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+  .refresh-btn { background: transparent; border: 1px solid var(--rule); border-radius: 999px; padding: 7px 12px; color: #a99c8a; font-family: var(--font-body); font-size: 12px; font-weight:600; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px; }
+  .refresh-btn:hover { border-color: var(--accent); color: var(--ink); }
+
+  /* --- Update banner --- */
+  .update-banner { background: linear-gradient(135deg, #1c1815, #2a2018); border: 1px solid var(--accent); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
+  .update-banner-title { font-family: var(--font-display); font-size: 18px; color: var(--accent); margin-bottom: 8px; display:flex; align-items:center; gap:8px; justify-content:space-between; }
+  .update-list { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+  .update-item { display:flex; align-items:center; gap:10px; font-size:12px; }
+  .update-item img { width:28px; height:40px; object-fit:cover; border-radius:4px; flex-shrink:0; background:#2a2420; }
+  .update-item-info { display:flex; flex-direction:column; gap:1px; }
+  .update-item-title { font-weight:600; color:var(--ink); }
+  .update-item-detail { color:#d98e3a; font-size:11px; }
+  .update-dismiss { background:transparent; border:none; color:#8a7e6f; cursor:pointer; font-size:14px; padding:2px; }
+  .update-apply-btn { background:var(--accent); color:#14110f; border:none; border-radius:8px; padding:9px 16px; font-family:var(--font-body); font-weight:700; font-size:12px; cursor:pointer; width:100%; }
+
+  /* --- Delete confirm --- */
+  .delete-overlay { position: fixed; inset: 0; background: rgba(10,8,7,0.8); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
+  .delete-panel { background: var(--paper-2); border: 1px solid #c1453d; border-radius: 16px; width: 100%; max-width: 320px; padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(193,69,61,0.2); text-align: center; }
+  .delete-icon { font-size: 36px; line-height: 1; }
+  .delete-title { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.02em; color: var(--ink); }
+  .delete-subtitle { font-size: 13px; color: #a99c8a; line-height: 1.45; }
+  .delete-anime-name { color: var(--ink); font-weight: 600; }
+  .delete-btn-row { display: flex; gap: 10px; width: 100%; margin-top: 4px; }
+  .delete-cancel { flex: 1; background: transparent; border: 1px solid var(--rule); border-radius: 10px; padding: 12px; color: #a99c8a; font-family: var(--font-body); font-weight: 600; font-size: 13px; cursor: pointer; }
+  .delete-cancel:active { border-color: var(--ink); color: var(--ink); }
+  .delete-confirm { flex: 1; background: #c1453d; border: none; border-radius: 10px; padding: 12px; color: #fff; font-family: var(--font-body); font-weight: 700; font-size: 13px; cursor: pointer; }
+  .delete-confirm:active { background: #a33530; }
+
+  /* --- Overlays --- */
+  .overlay { position: fixed; inset: 0; background: rgba(10,8,7,0.75); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: 50px 14px; z-index: 50; overflow-y: auto; }
+  .panel { background: var(--paper-2); border: 1px solid var(--rule); border-radius: 14px; width: 100%; max-width: 420px; padding: 16px; display: flex; flex-direction: column; gap: 11px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .panel-header { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-display); font-size: 19px; letter-spacing: 0.02em; }
+  .icon-btn { background: transparent; border: none; color: #a99c8a; cursor: pointer; padding: 4px; font-size: 16px; }
+  .field-row { display: flex; align-items: center; gap: 8px; background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 9px 12px; }
+  .field-row input { flex: 1; background: transparent; border: none; outline: none; color: var(--ink); font-family: var(--font-body); font-size: 13px; width: 100%; }
+  .field-row input::placeholder { color: #6b6053; }
+  .field-label { font-size: 11px; color: #8a7e6f; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .hint { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #8a7e6f; }
+  .results-list { display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow-y: auto; }
+  .result-row { display: flex; align-items: center; gap: 10px; background: var(--paper); border: 1px solid transparent; border-radius: 8px; padding: 6px; cursor: pointer; text-align: left; width: 100%; }
+  .result-row.sel { border-color: var(--accent); }
+  .result-row img { width: 30px; height: 42px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: #2a2420; }
+  .result-info { display: flex; flex-direction: column; min-width: 0; }
+  .result-title { font-size: 12px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .result-year { font-size: 10px; color: #6b6053; }
+  .confirm-btn { display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--accent); color: #14110f; border: none; border-radius: 8px; padding: 12px; font-family: var(--font-body); font-weight: 600; font-size: 13px; cursor: pointer; }
+  .confirm-btn:disabled { opacity: 0.4; }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row .confirm-btn { flex: 1; }
+  .secondary-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: transparent; color: #c1453d; border: 1px solid #c1453d; border-radius: 8px; padding: 12px; font-family: var(--font-body); font-weight: 600; font-size: 13px; cursor: pointer; }
+
+  .install-banner { display: none; align-items: center; justify-content: space-between; gap: 10px; background: var(--paper-2); border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; font-size: 12px; }
+  .install-banner.show { display: flex; }
+  .install-banner button { background: var(--accent); color: #14110f; border: none; border-radius: 999px; padding: 7px 13px; font-weight: 600; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .install-banner .dismiss { background: transparent; color: #a99c8a; padding: 4px; }
+
+  /* --- Theme picker --- */
+  .theme-overlay { position: fixed; inset: 0; background: rgba(10,8,7,0.85); backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; z-index: 90; }
+  .theme-sheet { background: #1c1815; border: 1px solid var(--rule); border-bottom: none; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; padding: 0 18px 30px; }
+  .theme-handle { width: 36px; height: 4px; background: var(--rule); border-radius: 999px; margin: 12px auto 16px; }
+  .theme-title { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.02em; color: var(--ink); margin-bottom: 16px; }
+  .theme-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .theme-swatch { display: flex; flex-direction: column; align-items: center; gap: 7px; cursor: pointer; }
+  .theme-circle { width: 52px; height: 52px; border-radius: 50%; border: 3px solid transparent; transition: transform 0.15s, border-color 0.15s; }
+  .theme-circle.active { border-color: var(--ink); transform: scale(1.1); }
+  .theme-swatch span { font-size: 10px; color: #a99c8a; font-weight: 600; text-align: center; }
+
+  /* --- Rating popup --- */
+  .rating-overlay { position: fixed; inset: 0; background: rgba(10,8,7,0.85); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 80; }
+  .rating-panel { background: linear-gradient(180deg, #221e1a, #1a1612); border: 1px solid var(--rule); border-radius: 20px; width: 100%; max-width: 320px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.7); }
+  .rating-cover-wrap { position: relative; width: 100%; height: 180px; overflow: hidden; }
+  .rating-cover-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(14px) brightness(0.3) saturate(1.5); transform: scale(1.1); }
+  .rating-cover-fg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 80px; height: 112px; object-fit: cover; border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,0.7); }
+  .rating-close { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .rating-body { padding: 16px 18px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .rating-title { font-family: var(--font-display); font-size: 20px; color: var(--ink); text-align: center; line-height: 1.1; }
+  .rating-stars-row { display: flex; gap: 6px; }
+  .rating-star { font-size: 32px; cursor: pointer; transition: transform 0.1s; filter: grayscale(1) opacity(0.3); }
+  .rating-star.lit { filter: none; }
+  .rating-star:active { transform: scale(1.3); }
+  .rating-label { font-size: 13px; font-weight: 600; color: var(--accent); height: 18px; }
+  .rating-clear { background: transparent; border: 1px solid var(--rule); border-radius: 999px; padding: 6px 16px; color: #6b6053; font-family: var(--font-body); font-size: 12px; cursor: pointer; }
+
+  /* --- Bottom nav --- */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(20,17,15,0.96); backdrop-filter: blur(10px); border-top: 1px solid var(--rule); display: flex; z-index: 40; padding-bottom: env(safe-area-inset-bottom); }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px 0; background: transparent; border: none; color: #6b6053; cursor: pointer; font-family: var(--font-body); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; transition: color 0.15s; }
+  .nav-btn.active { color: var(--accent); }
+  .nav-icon { font-size: 20px; line-height: 1; }
+
+  /* --- Tier list page --- */
+  .tier-header { margin-bottom: 20px; }
+  .tier-search { background: var(--paper-2); border: 1px solid var(--rule); border-radius: 999px; padding: 10px 16px; color: var(--ink); font-family: var(--font-body); font-size: 13px; width: 100%; outline: none; margin-bottom: 16px; }
+  .tier-search::placeholder { color: #6b6053; }
+  .tier-search:focus { border-color: var(--accent); }
+  .tier-section { margin-bottom: 24px; }
+  .tier-section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+  .tier-stars-label { display: flex; gap: 2px; }
+  .tier-count { font-size: 11px; color: #6b6053; margin-left: auto; }
+  .tier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+  .tier-card { background: var(--paper-2); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+  .tier-card-art { position: relative; width: 100%; aspect-ratio: 2/3; background: #1c1815; overflow: hidden; }
+  .tier-card-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tier-card-body { padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .tier-card-title { font-size: 11px; font-weight: 600; line-height: 1.2; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .star-row { display: flex; gap: 2px; }
+  .star-btn { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 2px; line-height: 1; opacity: 0.3; transition: opacity 0.1s, transform 0.1s; }
+  .star-btn.lit { opacity: 1; }
+  .star-btn:active { transform: scale(1.3); }
+  .no-rating-section { margin-bottom: 24px; }
+  .no-rating-title { font-size: 11px; color: #6b6053; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 10px; }
+
+  /* --- Detail overlay --- */
+  .detail-overlay { position: fixed; inset: 0; background: rgba(10,8,7,0.92); backdrop-filter: blur(8px); display: flex; align-items: flex-end; justify-content: center; z-index: 60; }
+  .detail-sheet { background: linear-gradient(180deg, #221e1a 0%, #1a1612 100%); border: 1px solid var(--rule); border-bottom: none; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding-bottom: env(safe-area-inset-bottom); }
+  .detail-handle { width: 36px; height: 4px; background: var(--rule); border-radius: 999px; margin: 12px auto 0; }
+  .detail-bg { position: relative; width: 100%; height: 200px; overflow: hidden; }
+  .detail-bg-img { width: 100%; height: 100%; object-fit: cover; filter: blur(18px) brightness(0.35) saturate(1.4); transform: scale(1.1); }
+  .detail-cover-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .detail-cover { width: 100px; height: 144px; object-fit: cover; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.7); }
+  .detail-cover-placeholder { width: 100px; height: 144px; border-radius: 12px; background: #2a2420; display: flex; align-items: center; justify-content: center; font-size: 36px; box-shadow: 0 8px 32px rgba(0,0,0,0.7); }
+  .detail-close-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); border: none; color: #fff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; }
+  .detail-body { padding: 16px 18px 20px; }
+  .detail-title { font-family: var(--font-display); font-size: 26px; letter-spacing: 0.01em; line-height: 1.05; color: var(--ink); margin-bottom: 6px; }
+  .detail-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; align-items: center; }
+  .detail-pill { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid; }
+  .detail-synopsis { font-size: 13px; color: #c4b8a8; line-height: 1.6; margin-bottom: 16px; }
+  .detail-synopsis.loading { color: #6b6053; font-style: italic; }
+  .detail-actions { display: flex; gap: 8px; }
+  .detail-edit-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: transparent; border: 1px solid var(--rule); border-radius: 10px; padding: 11px; color: #a99c8a; font-family: var(--font-body); font-weight: 600; font-size: 13px; cursor: pointer; }
+  .detail-status-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid; border-radius: 10px; padding: 11px; font-family: var(--font-body); font-weight: 600; font-size: 13px; cursor: pointer; background: transparent; }
+
+  /* --- Edit panel redesign --- */
+  .edit-overlay { position: fixed; inset: 0; background: rgba(10,8,7,0.85); backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .edit-sheet { background: linear-gradient(180deg, #221e1a 0%, #1a1612 100%); border: 1px solid var(--rule); border-bottom: none; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; padding: 0 0 env(safe-area-inset-bottom); max-height: 92vh; overflow-y: auto; }
+  .edit-handle { width: 36px; height: 4px; background: var(--rule); border-radius: 999px; margin: 12px auto 0; }
+  .edit-hero { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px 14px; border-bottom: 1px solid var(--rule); }
+  .edit-hero-img { width: 72px; height: 100px; object-fit: cover; border-radius: 10px; flex-shrink: 0; background: #2a2420; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
+  .edit-hero-img-placeholder { width: 72px; height: 100px; border-radius: 10px; flex-shrink: 0; background: #2a2420; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+  .edit-hero-info { flex: 1; display: flex; flex-direction: column; gap: 6px; padding-top: 2px; }
+  .edit-hero-title { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.01em; line-height: 1.1; color: var(--ink); }
+  .edit-close { background: rgba(255,255,255,0.07); border: none; color: #a99c8a; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .edit-section { padding: 14px 18px; border-bottom: 1px solid var(--rule); }
+  .edit-section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #6b6053; font-weight: 700; margin-bottom: 10px; }
+  .edit-input { background: rgba(255,255,255,0.05); border: 1px solid var(--rule); border-radius: 10px; padding: 11px 14px; color: var(--ink); font-family: var(--font-body); font-size: 14px; width: 100%; outline: none; transition: border-color 0.15s; }
+  .edit-input:focus { border-color: var(--accent); }
+  .edit-input::placeholder { color: #4a4038; }
+  .edit-search-row { display: flex; gap: 8px; }
+  .edit-search-btn { background: var(--accent); border: none; border-radius: 10px; padding: 11px 16px; color: #14110f; font-family: var(--font-body); font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .edit-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; margin-top: 10px; max-height: 180px; overflow-y: auto; }
+  .edit-result-thumb { position: relative; aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s; flex-shrink: 0; }
+  .edit-result-thumb.sel { border-color: var(--accent); }
+  .edit-result-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .edit-result-thumb-label { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, rgba(0,0,0,0.85), transparent); padding: 16px 4px 4px; font-size: 9px; color: #fff; text-align: center; line-height: 1.2; }
+  .edit-status-row { display: flex; gap: 8px; }
+  .edit-status-opt { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 10px 6px; border-radius: 10px; border: 1.5px solid var(--rule); cursor: pointer; background: transparent; font-family: var(--font-body); font-size: 11px; font-weight: 600; color: #6b6053; transition: all 0.15s; }
+  .edit-status-opt.active { color: var(--ink); }
+  .edit-status-opt .status-icon { font-size: 20px; line-height: 1; }
+  .edit-save-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--accent); color: #14110f; border: none; border-radius: 12px; padding: 14px; font-family: var(--font-body); font-weight: 700; font-size: 14px; cursor: pointer; width: calc(100% - 36px); margin: 14px 18px; }
+  .edit-save-btn:active { opacity: 0.85; }
+
+  /* edit panel photo preview */
+  .photo-preview { width: 60px; height: 84px; object-fit: cover; border-radius: 6px; border: 1px solid var(--rule); flex-shrink: 0; background: #2a2420; }
+  .photo-row { display: flex; gap: 10px; align-items: flex-start; }
+  .photo-fields { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+import React from "https://esm.sh/react@18.2.0";
+import ReactDOM from "https://esm.sh/react-dom@18.2.0/client";
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
+const h = React.createElement;
+
+const manifest = { name:"Ma liste animé", short_name:"Anime", start_url:".", display:"standalone", background_color:"#14110f", theme_color:"#14110f", icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2314110f'/%3E%3Ctext x='50' y='66' font-size='54' text-anchor='middle' fill='%23d98e3a' font-family='sans-serif'%3E%E2%9C%93%3C/text%3E%3C/svg%3E",sizes:"100x100",type:"image/svg+xml"}] };
+const mb = new Blob([JSON.stringify(manifest)],{type:"application/json"});
+document.getElementById("manifest-link").setAttribute("href", URL.createObjectURL(mb));
+
+const STORAGE_KEY = "anime-tracker-v2";
+
+// title → searchTitle override for tricky ones
+const SEARCH_OVERRIDES = {
+  "Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka": "DanMachi",
+  "The 100 Girlfriends Who Really, Really, Really, Really, Really Love You": "100 Kanojo",
+  "Gamble School (Kakegurui)": "Kakegurui",
+  "Takane no Hana wa Mada Karenai (Otonari no Ossan)": "Otonari no Ossan",
+  "Tensai Ouji no Akaji Kokka Saisei Jutsu": "Tensai Ouji no Akaji Kokka",
+  "I Got Reincarnated as the 7th Prince": "Tensei Shitara Dainana Ouji",
+  "So I'm a Spider, So What?": "Kumo Desu ga Nani ka",
+  "That Time I Got Reincarnated as a Slime": "Tensei shitara Slime Datta Ken",
+  "Miss Kobayashi's Dragon Maid": "Kobayashi-san Chi no Maid Dragon",
+  "The Apothecary Diaries": "Kusuriya no Hitorigoto",
+  "The Princess and the Demon": "Maou no Ore ga Dorei Elf wo Yome ni Shitanda ga",
+  "Rascal Does Not Dream of Bunny Girl Senpai": "Seishun Buta Yarou wa Bunny Girl Senpai",
+  "She Professed Herself Pupil of the Wise Man": "Kenja no Deshi wo Nanoru Kenja",
+  "Sky-High Survival": "Kami-tachi ni Hirowareta Otoko",
+  "My Unique Skill Makes Me OP even at Level 1": "Level 1 dakedo Unique Skill",
+  "The Weakest Tamer Began a Journey to Pick Up Trash": "Saijaku Tamer wa Gomi Hiroi",
+  "The Shiunji Family Children": "Shiunji-ke no Kodomotachi",
+  "The Wrong Way to Use Healing Magic": "Chiyu Mahou no Machigatta Tsukaikata",
+  "Ultraman: Magmell of the Boundary": "Mahou Shoujo Magical Destroyers",
+  "Record of Ragnarok": "Shuumatsu no Valkyrie",
+  "Mikadono Sanshimai wa Angai, Choroi": "Mikadono Sanshimai",
+  "I Got a Cheat Skill in Another World": "Cheat Skill wo Te ni Ireta Ore wa",
+  "Dark Moon: The Blood Altar": "Dark Moon the Blood Altar",
+  "The Beginning After the End": "Owari no Hajimari",
+  "Reincarnated as a Sword": "Tensei shitara Ken deshita",
+  "Mission: Yozakura Family": "Yozakura-san Chi no Daisakusen",
+  "By the Grace of the Gods": "Kami-tachi ni Hirowareta Otoko",
+  "Farming Life in Another World": "Isekai Nonbiri Nouka",
+};
+
+const RAW = [
+  ["Akashic Records of Bastard Magic Instructor","S1 Ep12","done"],
+  ["Attack on Titan","","unknown"],
+  ["Assassination Classroom","S2 Ep25 (+ film)","done"],
+  ["Battle Game in 5 Seconds","S1 Ep12","done"],
+  ["Black Clover","S2 Ep132","done"],
+  ["Bleach","S3 Ep14","done"],
+  ["Blood Lad","S1 Ep10","done"],
+  ["Blue Lock","S1 Ep24","todo"],
+  ["Bofuri","S2 Ep12","done"],
+  ["By the Grace of the Gods","S2 Ep24","done"],
+  ["Call of the Night","S2 Ep12","done"],
+  ["Classroom of the Elite","S3 Ep13","todo"],
+  ["Cyberpunk: Edgerunners","S1 Ep10","done"],
+  ["Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka","?","unknown"],
+  ["Dark Moon: The Blood Altar","S1 Ep12","done"],
+  ["Darling in the Franxx","S1 Ep24","done"],
+  ["Demon Slayer","S3 Ep11","todo"],
+  ["Dragon Ball Z","","todo"],
+  ["Edens Zero","S2 Ep25","done"],
+  ["86 Eighty-Six","S1 Ep23","done"],
+  ["The Eminence in Shadow","S2 Ep12","todo"],
+  ["Fairy Tail","S1 Ep328","todo"],
+  ["Farming Life in Another World","S2 Ep13","done"],
+  ["Food Wars!","S3 Ep24","todo"],
+  ["Fullmetal Alchemist","S1 Ep51","done"],
+  ["Gamble School (Kakegurui)","S2 Ep12","todo"],
+  ["The 100 Girlfriends Who Really, Really, Really, Really, Really Love You","S2 Ep12","done"],
+  ["Goblin Slayer","S1 Ep12","done"],
+  ["Haikyu!!","S2 Ep25","todo"],
+  ["Hell's Paradise","S2 Ep12","done"],
+  ["Hunter x Hunter","Ep148","done"],
+  ["Horimiya","S1 Ep13","done"],
+  ["I Got a Cheat Skill in Another World","S1 Ep13","done"],
+  ["In Another World With My Smartphone","","unknown"],
+  ["Jujutsu Kaisen","S2 Ep23","todo"],
+  ["Kaguya-sama: Love Is War","S3 Ep13","done"],
+  ["Kuroko's Basketball","S3 Ep25","todo"],
+  ["Miss Kobayashi's Dragon Maid","","unknown"],
+  ["The Princess and the Demon","S1 Ep24","done"],
+  ["The Apothecary Diaries","S2 Ep48","todo"],
+  ["Link Click","","unknown"],
+  ["Masamune-kun's Revenge","S2 Ep12","done"],
+  ["Mashle","S2 Ep12","todo"],
+  ["My Hero Academia","S6 Ep25","todo"],
+  ["Mikadono Sanshimai wa Angai, Choroi","S1 Ep12","done"],
+  ["Mission: Yozakura Family","S1 Ep27","done"],
+  ["I Got Reincarnated as the 7th Prince","S1 Ep12","todo"],
+  ["So I'm a Spider, So What?","S1 Ep24","done"],
+  ["That Time I Got Reincarnated as a Slime","S3 Ep24","todo"],
+  ["Mushoku Tensei","S2 Part1 Ep12","todo"],
+  ["My Dress-Up Darling","S2 Ep24","done"],
+  ["My Unique Skill Makes Me OP even at Level 1","S1 Ep12","done"],
+  ["Naruto","Ep500","done"],
+  ["No Game No Life","S1 Ep12","done"],
+  ["One Piece","S10 Ep1088","todo"],
+  ["Oshi no Ko","S3 Ep11","todo"],
+  ["Overlord","S4 Ep13","done"],
+  ["Owari no Seraph","S2 Ep12","unknown"],
+  ["Platinum End","S1 Ep24","done"],
+  ["Pokemon","","done"],
+  ["Ragna Crimson","S1 Ep24","done"],
+  ["Rascal Does Not Dream of Bunny Girl Senpai","S1 Ep13","todo"],
+  ["Reincarnated as a Sword","S1 Ep12","done"],
+  ["The Rising of the Shield Hero","","unknown"],
+  ["Sakamoto Days","S1 Part2 Ep11","done"],
+  ["The Seven Deadly Sins","S4 Ep24","done"],
+  ["She Professed Herself Pupil of the Wise Man","S1 Ep12","done"],
+  ["Shironeko Project: Zero Chronicle","S1 Ep12","done"],
+  ["Solo Leveling","S2 Ep13","todo"],
+  ["Soul Eater","S1 Ep51","done"],
+  ["Sky-High Survival","S1 Ep12","done"],
+  ["Spy x Family","","unknown"],
+  ["Takane no Hana wa Mada Karenai (Otonari no Ossan)","S1 Ep12","todo"],
+  ["Tensai Ouji no Akaji Kokka Saisei Jutsu","?","unknown"],
+  ["The Beginning After the End","S1 Ep12","todo"],
+  ["The Healer Who Was Banished","S1 Ep12","done"],
+  ["The Quintessential Quintuplets","S2 Ep12","unknown"],
+  ["The Shiunji Family Children","S1 Ep12","done"],
+  ["The Weakest Tamer Began a Journey to Pick Up Trash","S1 Ep12","done"],
+  ["The Wrong Way to Use Healing Magic","S1 Ep13","todo"],
+  ["Tokyo Ghoul","S2 Ep12","done"],
+  ["Tomodachi Game","","unknown"],
+  ["Tower of God","S2 Ep23","done"],
+  ["Ultraman: Magmell of the Boundary","S1 Ep13","done"],
+  ["Record of Ragnarok","S3 Ep15","unknown"],
+  ["Vinland Saga","","unknown"],
+  ["Wind Breaker","S2 Ep12","done"],
+];
+
+function seedAnime() {
+  return RAW.map(([title, progress, status], i) => ({
+    id: `seed-${i}`, title, progress, status,
+    image: null, imageState: "idle",
+  }));
+}
+
+function loadInitial() {
+  try {
+    // Try new key first
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) raw = localStorage.getItem("anime-tracker-v1"); // migrate from old
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length) {
+        // reset imageState so covers reload on next open if missing
+        return parsed.map(a => ({ ...a, imageState: a.image ? "done" : "idle", episodes: a.episodes || null, totalSeasons: a.totalSeasons || null, airing: a.airing || false }));
+      }
+    }
+  } catch(e) {}
+  return seedAnime();
+}
+
+const STATUS_META = {
+  done: { label:"À jour", color:"#4a7c59", bg:"rgba(74,124,89,0.14)" },
+  todo: { label:"À voir", color:"#c1453d", bg:"rgba(193,69,61,0.14)" },
+  unknown: { label:"Non noté", color:"#9a8c78", bg:"rgba(154,140,120,0.16)" },
+};
+
+async function fetchAnimeInfo(title) {
+  const q = SEARCH_OVERRIDES[title] || title;
+  try {
+    // Use AniList GraphQL — more reliable seasons/episodes data, no strict rate limit
+    const query = `query($search:String){Media(search:$search,type:ANIME,sort:SEARCH_MATCH){id title{romaji english}coverImage{extraLarge large}episodes status season seasonYear relations{edges{relationType(version:2) node{type status episodes seasonYear}}}}}`;
+    const res = await fetch("https://graphql.anilist.co", {
+      method:"POST",
+      headers:{"Content-Type":"application/json","Accept":"application/json"},
+      body: JSON.stringify({ query, variables:{ search: q } })
+    });
+    if (!res.ok) throw new Error();
+    const json = await res.json();
+    const media = json?.data?.Media;
+    if (!media) throw new Error();
+
+    const image = media.coverImage?.extraLarge || media.coverImage?.large || null;
+    const episodes = media.episodes || null;
+    const airing = media.status === "RELEASING";
+
+    // Count TV sequels and prequels to determine season number
+    const edges = media.relations?.edges || [];
+    const sequels = edges.filter(e => e.relationType === "SEQUEL" && e.node?.type === "ANIME").length;
+    const prequels = edges.filter(e => e.relationType === "PREQUEL" && e.node?.type === "ANIME").length;
+    const totalSeasons = prequels + 1 + sequels;
+
+    return { image, episodes, totalSeasons: totalSeasons > 1 ? totalSeasons : 1, airing, malId: null };
+  } catch {
+    // Fallback to Jikan if AniList fails
+    try {
+      const q2 = SEARCH_OVERRIDES[title] || title;
+      const res2 = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q2)}&limit=1&sfw=true`);
+      if (!res2.ok) throw new Error();
+      const d2 = await res2.json();
+      const item = d2?.data?.[0];
+      if (!item) return null;
+      return {
+        image: item.images?.jpg?.large_image_url || item.images?.jpg?.image_url || null,
+        episodes: item.episodes || null,
+        totalSeasons: 1,
+        airing: item.status === "Currently Airing",
+        malId: item.mal_id,
+      };
+    } catch { return null; }
+  }
+}
+
+
+async function searchCovers(query) {
+  try {
+    const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=8&sfw=true`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    return data?.data || [];
+  } catch { return []; }
+}
+
+function useImageQueue(items, setItems) {
+  useEffect(() => {
+    let cancelled = false;
+    const pending = items.filter(a => a.imageState === "idle");
+    if (!pending.length) return;
+    let i = 0;
+    async function step() {
+      if (cancelled) return;
+      const anime = pending[i];
+      if (!anime) return;
+      setItems(prev => prev.map(a => a.id === anime.id ? {...a, imageState:"loading"} : a));
+      const info = await fetchAnimeInfo(anime.title);
+      if (!cancelled) setItems(prev => prev.map(a => a.id === anime.id ? {
+        ...a,
+        imageState: info?.image ? "done" : "error",
+        image: info?.image || null,
+        episodes: info?.episodes || null,
+        totalSeasons: info?.totalSeasons || 1,
+        airing: info?.airing || false,
+        malId: info?.malId || null,
+      } : a));
+      i++;
+      setTimeout(step, 700);
+    }
+    step();
+    return () => { cancelled = true; };
+  }, [items.length]);
+}
+
+function Placeholder({ title, state }) {
+  return h("div", { className:"placeholder" },
+    state === "loading" ? h("span", { className:"spin" }, "⟳") : h("span", null, "🎬"),
+    state !== "loading" && h("span", null, title)
+  );
+}
+
+// ---- Edit Panel ----
+function EditPanel({ anime, onSave, onClose }) {
+  const [progress, setProgress] = useState(anime.progress || "");
+  const [imgQuery, setImgQuery] = useState(anime.title);
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedImg, setSelectedImg] = useState(anime.image || null);
+  const [status, setStatus] = useState(anime.status || "unknown");
+
+  const doSearch = useCallback(async (q) => {
+    if (!q.trim()) { setResults([]); return; }
+    setSearching(true);
+    const r = await searchCovers(q);
+    setResults(r); setSearching(false);
+  }, []);
+
+  const handleSave = () => {
+    onSave(anime.id, { progress: progress.trim(), image: selectedImg, imageState: selectedImg ? "done" : "error", status });
+    onClose();
+  };
+
+  return h("div", { className:"edit-overlay", onClick: onClose },
+    h("div", { className:"edit-sheet", onClick: e => e.stopPropagation() },
+      h("div", { className:"edit-handle" }),
+
+      h("div", { className:"edit-hero" },
+        selectedImg
+          ? h("img", { className:"edit-hero-img", src:selectedImg, alt:anime.title })
+          : h("div", { className:"edit-hero-img-placeholder" }, "🎬"),
+        h("div", { className:"edit-hero-info" },
+          h("div", { className:"edit-hero-title" }, anime.title),
+          anime.progress && h("div", { style:{fontSize:"11px",color:"#8a7e6f"} }, anime.progress)
+        ),
+        h("button", { className:"edit-close", onClick:onClose }, "✕")
+      ),
+
+      h("div", { className:"edit-section" },
+        h("div", { className:"edit-section-title" }, "📍 Progression"),
+        h("input", {
+          className:"edit-input",
+          placeholder:"ex: S2 Ep12",
+          value: progress,
+          onChange: e => setProgress(e.target.value),
+          onKeyDown: e => { if(e.key==="Enter") handleSave(); }
+        })
+      ),
+
+      h("div", { className:"edit-section" },
+        h("div", { className:"edit-section-title" }, "🎯 Statut"),
+        h("div", { className:"edit-status-row" },
+          [
+            { key:"done",    icon:"✅", label:"À jour"    },
+            { key:"todo",    icon:"🕐", label:"À voir"    },
+            { key:"unknown", icon:"❓", label:"Non noté"  },
+          ].map(opt => h("button", {
+            key: opt.key,
+            className: "edit-status-opt" + (status === opt.key ? " active" : ""),
+            style: status === opt.key ? {
+              borderColor: STATUS_META[opt.key].color,
+              background: STATUS_META[opt.key].bg,
+              color: STATUS_META[opt.key].color
+            } : {},
+            onClick: () => setStatus(opt.key)
+          },
+            h("span", { className:"status-icon" }, opt.icon),
+            opt.label
+          ))
+        )
+      ),
+
+      h("div", { className:"edit-section" },
+        h("div", { className:"edit-section-title" }, "🖼️ Changer la jaquette"),
+        h("div", { className:"edit-search-row" },
+          h("input", {
+            className:"edit-input",
+            placeholder:"Chercher une jaquette...",
+            value: imgQuery,
+            onChange: e => setImgQuery(e.target.value),
+            onKeyDown: e => { if(e.key==="Enter") doSearch(imgQuery); }
+          }),
+          h("button", { className:"edit-search-btn", onClick:()=>doSearch(imgQuery) },
+            searching ? h("span",{className:"spin"},"⟳") : "Chercher"
+          )
+        ),
+        results.length > 0 && h("div", { className:"edit-results" },
+          results.map(r => {
+            const imgUrl = r.images?.jpg?.large_image_url || r.images?.jpg?.image_url || null;
+            return h("div", {
+              key: r.mal_id,
+              className: `edit-result-thumb ${selectedImg === imgUrl ? "sel" : ""}`,
+              onClick: () => setSelectedImg(imgUrl)
+            },
+              h("img", { src: r.images?.jpg?.image_url, alt:"" }),
+              h("div", { className:"edit-result-thumb-label" }, r.title)
+            );
+          })
+        )
+      ),
+
+      h("button", { className:"edit-save-btn", onClick:handleSave },
+        "✓  Sauvegarder les modifications"
+      )
+    )
+  );
+}
+
+// ---- Add Panel ----
+function AddPanel({ onAdd, onClose }) {
+  const [query, setQuery] = useState("");
+  const [progress, setProgress] = useState("");
+  const [status, setStatus] = useState("unknown");
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); return; }
+    const t = setTimeout(async () => {
+      setSearching(true);
+      const r = await searchCovers(query);
+      setResults(r); setSearching(false);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const handleAdd = () => {
+    const title = selected ? selected.title : query.trim();
+    if (!title) return;
+    onAdd({ id:`custom-${Date.now()}`, title, progress: progress.trim(), status,
+      image: selected?.images?.jpg?.large_image_url || null,
+      imageState: selected?.images?.jpg?.large_image_url ? "done" : "idle" });
+    setQuery(""); setProgress(""); setResults([]); setSelected(null); setStatus("unknown");
+    onClose();
+  };
+
+  return h("div", { className:"overlay", onClick:onClose },
+    h("div", { className:"panel", onClick:e=>e.stopPropagation() },
+      h("div", { className:"panel-header" }, h("span",null,"Ajouter un animé"), h("button",{className:"icon-btn",onClick:onClose},"✕")),
+      h("div", { className:"field-row" },
+        h("input", { autoFocus:true, placeholder:"Chercher un titre...", value:query, onChange:e=>{setQuery(e.target.value);setSelected(null);}, onKeyDown:e=>{if(e.key==="Enter"&&!selected)handleAdd();} })
+      ),
+      searching && h("div",{className:"hint"},h("span",{className:"spin"},"⟳")," Recherche..."),
+      !searching && results.length > 0 && !selected && h("div",{className:"results-list"},
+        results.map(r => h("button",{key:r.mal_id,className:"result-row",onClick:()=>{setSelected(r);setQuery(r.title);}},
+          h("img",{src:r.images?.jpg?.image_url,alt:""}),
+          h("div",{className:"result-info"},h("span",{className:"result-title"},r.title),r.year&&h("span",{className:"result-year"},r.year))
+        ))
+      ),
+      h("div",{className:"field-row"},
+        h("input",{placeholder:"Progression (ex: S2 Ep12) — optionnel",value:progress,onChange:e=>setProgress(e.target.value),onKeyDown:e=>{if(e.key==="Enter")handleAdd();}})
+      ),
+      h("div", { className:"field-label", style:{marginTop:"4px"} }, "Statut"),
+      h("div", { className:"edit-status-row" },
+        [
+          { key:"done",    icon:"✅", label:"À jour"   },
+          { key:"todo",    icon:"🕐", label:"À voir"   },
+          { key:"unknown", icon:"❓", label:"Non noté" },
+        ].map(opt => h("button", {
+          key: opt.key,
+          className: "edit-status-opt" + (status === opt.key ? " active" : ""),
+          style: status === opt.key ? {
+            borderColor: STATUS_META[opt.key].color,
+            background: STATUS_META[opt.key].bg,
+            color: STATUS_META[opt.key].color
+          } : {},
+          onClick: () => setStatus(opt.key)
+        },
+          h("span", { className:"status-icon" }, opt.icon),
+          opt.label
+        ))
+      ),
+      h("button",{className:"confirm-btn",onClick:handleAdd,disabled:!query.trim()},"+  Ajouter à la liste")
+    )
+  );
+}
+
+function DetailPanel({ anime, onClose }) {
+  return h("div", {
+    className:"detail-overlay",
+    onClick: onClose,
+    style:{ display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }
+  },
+    anime.image
+      ? h("img", {
+          src: anime.image,
+          alt: anime.title,
+          onClick: e => e.stopPropagation(),
+          style:{ maxWidth:"90vw", maxHeight:"88vh", borderRadius:"14px", boxShadow:"0 20px 60px rgba(0,0,0,0.8)", objectFit:"contain", display:"block" }
+        })
+      : h("div", { style:{color:"#8a7e6f", fontSize:"18px"} }, "Pas d'image disponible")
+  );
+}
+
+function DeleteConfirm({ anime, onConfirm, onCancel }) {
+  return h("div", { className:"delete-overlay", onClick: onCancel },
+    h("div", { className:"delete-panel", onClick: e => e.stopPropagation() },
+      h("div", { className:"delete-icon" }, "🗑️"),
+      h("div", { className:"delete-title" }, "Supprimer ?"),
+      h("div", { className:"delete-subtitle" },
+        "Tu vas retirer ",
+        h("span", { className:"delete-anime-name" }, anime.title),
+        " de ta liste. Cette action est irréversible."
+      ),
+      h("div", { className:"delete-btn-row" },
+        h("button", { className:"delete-cancel", onClick: onCancel }, "Annuler"),
+        h("button", { className:"delete-confirm", onClick: onConfirm }, "Supprimer")
+      )
+    )
+  );
+}
+
+function AnimeCard({ anime, onToggleStatus, onRemove, onEdit, onAskDelete, onDetail }) {
+  const meta = STATUS_META[anime.status];
+  return h("div", { className:"card" },
+    h("div", { className:"card-art" },
+      h("div", { style:{width:"100%",height:"100%",cursor:"pointer"}, onClick:()=>onDetail(anime) },
+        anime.image
+          ? h("img", { src:anime.image, alt:anime.title, loading:"lazy", style:{width:"100%",height:"100%",objectFit:"cover",display:"block"} })
+          : h(Placeholder, { title:anime.title, state:anime.imageState })
+      ),
+      h("div", { className:"card-actions" },
+        h("button", { className:"action-btn", onClick:e=>{e.stopPropagation();onEdit(anime);}, title:"Modifier", "aria-label":"Modifier" }, "✏️"),
+        h("button", { className:"action-btn del", onClick:e=>{e.stopPropagation();onAskDelete(anime);}, title:"Retirer", "aria-label":"Retirer" }, "✕")
+      )
+    ),
+    h("div", { className:"card-body" },
+      h("div", { className:"card-title", title:anime.title }, anime.title),
+      anime.progress ? h("div", { className:"card-progress" }, anime.progress) : null,
+      h("button", {
+        className:"status-pill",
+        style:{ color:meta.color, background:meta.bg, borderColor:meta.color },
+        onClick:()=>onToggleStatus(anime.id)
+      }, meta.label),
+      (anime.episodes || (anime.totalSeasons && anime.totalSeasons > 1) || anime.airing || anime.imageState === "loading")
+        ? h("div", { className:"card-eps" },
+            anime.imageState === "loading"
+              ? h("span", { style:{fontSize:"9px",opacity:0.5} }, "chargement...")
+              : h(React.Fragment, null,
+                  anime.totalSeasons > 1 ? h("span", { className:"seasons-badge" }, "S" + anime.totalSeasons) : null,
+                  anime.episodes ? h("span", { className:"eps-badge" }, anime.episodes + " éps") : null,
+                  anime.airing ? h("span", { className:"airing-badge" }, "● Live") : null
+                )
+          )
+        : null
+    )
+  );
+}
+
+function useInstallPrompt() {
+  const [prompt, setPrompt] = useState(null);
+  const [installed, setInstalled] = useState(false);
+  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  useEffect(()=>{
+    if(isStandalone){ setInstalled(true); return; }
+    const handler=(e)=>{ e.preventDefault(); setPrompt(e); };
+    window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", ()=>setInstalled(true));
+    return ()=>window.removeEventListener("beforeinstallprompt", handler);
+  },[]);
+  const install = async () => {
+    if(isIos){ alert("Sur iPhone/iPad :\n1. Appuie sur le bouton Partager 📤\n2. Puis \"Sur l'écran d'accueil\""); return; }
+    if(!prompt) return;
+    prompt.prompt();
+    const { outcome } = await prompt.userChoice;
+    if(outcome === "accepted") setInstalled(true);
+  };
+  return { canInstall: !isStandalone && !installed, install };
+}
+
+// ---- Auto-update checker ----
+const UPDATE_CHECK_KEY = "anime-last-check";
+const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24h
+
+async function checkForUpdates(items) {
+  // Only check once every 24h
+  const lastCheck = parseInt(localStorage.getItem(UPDATE_CHECK_KEY) || "0");
+  const now = Date.now();
+  if (now - lastCheck < CHECK_INTERVAL_MS) return [];
+  localStorage.setItem(UPDATE_CHECK_KEY, String(now));
+
+  const updates = [];
+  // Check up to 20 items with existing MAL data, with delay between calls
+  const toCheck = items.filter(a => a.malId).slice(0, 20);
+
+  for (let i = 0; i < toCheck.length; i++) {
+    const anime = toCheck[i];
+    try {
+      await new Promise(r => setTimeout(r, 500));
+      const res = await fetch(`https://api.jikan.moe/v4/anime/${anime.malId}/relations`);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const sequels = (data?.data || []).filter(r => r.relation === "Sequel");
+      const newSeasonCount = sequels.length + 1;
+      if (newSeasonCount > (anime.totalSeasons || 1)) {
+        // Fetch the latest sequel info
+        const latestSequel = sequels[sequels.length - 1]?.entry?.[0];
+        let newEps = null;
+        let newImg = anime.image;
+        if (latestSequel?.mal_id) {
+          await new Promise(r => setTimeout(r, 400));
+          const r2 = await fetch(`https://api.jikan.moe/v4/anime/${latestSequel.mal_id}`);
+          if (r2.ok) {
+            const d2 = await r2.json();
+            newEps = d2?.data?.episodes;
+            newImg = d2?.data?.images?.jpg?.large_image_url || anime.image;
+          }
+        }
+        updates.push({
+          id: anime.id,
+          title: anime.title,
+          image: newImg,
+          oldSeasons: anime.totalSeasons || 1,
+          newSeasons: newSeasonCount,
+          newEpisodes: newEps,
+        });
+      }
+    } catch { continue; }
+  }
+  return updates;
+}
+
+function StarRating({ rating, onChange }) {
+  const [hover, setHover] = useState(0);
+  return h("div", { className:"star-row" },
+    [1,2,3,4,5].map(i =>
+      h("button", {
+        key: i,
+        className: `star-btn ${(hover||rating) >= i ? "lit" : ""}`,
+        onClick: () => onChange(rating === i ? 0 : i),
+        onMouseEnter: () => setHover(i),
+        onMouseLeave: () => setHover(0),
+      }, "⭐")
+    )
+  );
+}
+
+function RatingPopup({ anime, rating, onRate, onClose }) {
+  const [hover, setHover] = useState(0);
+  const LABELS = { 1:"Décevant", 2:"Moyen", 3:"Bien", 4:"Excellent", 5:"Incontournable" };
+  const current = hover || rating;
+  return h("div", { className:"rating-overlay", onClick:onClose },
+    h("div", { className:"rating-panel", onClick:e=>e.stopPropagation() },
+      h("div", { className:"rating-cover-wrap" },
+        anime.image && h("img", { className:"rating-cover-bg", src:anime.image, alt:"" }),
+        anime.image
+          ? h("img", { className:"rating-cover-fg", src:anime.image, alt:anime.title })
+          : h("div", { style:{position:"absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)",fontSize:"36px"} }, "🎬"),
+        h("button", { className:"rating-close", onClick:onClose }, "✕")
+      ),
+      h("div", { className:"rating-body" },
+        h("div", { className:"rating-title" }, anime.title),
+        h("div", { className:"rating-stars-row" },
+          [1,2,3,4,5].map(i =>
+            h("span", {
+              key: i,
+              className: "rating-star" + (current >= i ? " lit" : ""),
+              onClick: () => { onRate(rating === i ? 0 : i); onClose(); },
+              onMouseEnter: () => setHover(i),
+              onMouseLeave: () => setHover(0),
+            }, "⭐")
+          )
+        ),
+        h("div", { className:"rating-label" }, LABELS[current] || "Appuie pour noter"),
+        rating > 0 && h("button", { className:"rating-clear", onClick:()=>{ onRate(0); onClose(); } }, "Retirer la note")
+      )
+    )
+  );
+}
+
+function TierListPage({ items }) {
+  const [search, setSearch] = useState("");
+  const [ratingTarget, setRatingTarget] = useState(null);
+  const [ratings, setRatings] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("anime-ratings-v1") || "{}"); } catch { return {}; }
+  });
+
+  const saveRating = (id, stars) => {
+    const next = { ...ratings, [id]: stars };
+    if (stars === 0) delete next[id];
+    setRatings(next);
+    try { localStorage.setItem("anime-ratings-v1", JSON.stringify(next)); } catch {}
+  };
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return items;
+    const q = search.toLowerCase();
+    return items.filter(a => a.title.toLowerCase().includes(q));
+  }, [items, search]);
+
+  const byStars = useMemo(() => {
+    const groups = { 5:[], 4:[], 3:[], 2:[], 1:[], 0:[] };
+    filtered.forEach(a => {
+      const r = ratings[a.id] || 0;
+      groups[r].push(a);
+    });
+    return groups;
+  }, [filtered, ratings]);
+
+  const STAR_LABELS = { 5:"Incontournable", 4:"Excellent", 3:"Bien", 2:"Moyen", 1:"Décevant" };
+
+  return h("div", { className:"wrap" },
+    h("div", { className:"tier-header" },
+      h("div", { className:"eyebrow" }, "Classement"),
+      h("h1", null, "Tier List"),
+      h("div", { className:"subtitle" }, "Note tes animés de ⭐ à ⭐⭐⭐⭐⭐ en appuyant sur les étoiles.")
+    ),
+    h("input", { className:"tier-search", placeholder:"Rechercher un animé...", value:search, onChange:e=>setSearch(e.target.value) }),
+    [5,4,3,2,1].map(stars =>
+      byStars[stars].length > 0 && h("div", { key:stars, className:"tier-section" },
+        h("div", { className:"tier-section-header" },
+          h("div", { className:"tier-stars-label" }, "⭐".repeat(stars)),
+          h("span", { style:{fontSize:"13px", fontWeight:600, color:"var(--ink)"} }, STAR_LABELS[stars]),
+          h("span", { className:"tier-count" }, byStars[stars].length + " animé" + (byStars[stars].length > 1 ? "s" : ""))
+        ),
+        h("div", { className:"tier-grid" },
+          byStars[stars].map(anime =>
+            h("div", { key:anime.id, className:"tier-card" },
+              h("div", { className:"tier-card-art", style:{cursor:"pointer"}, onClick:()=>setRatingTarget(anime) },
+                anime.image
+                  ? h("img", { src:anime.image, alt:anime.title, loading:"lazy" })
+                  : h("div", { className:"placeholder" }, h("span", null, "🎬"), h("span", null, anime.title))
+              ),
+              h("div", { className:"tier-card-body" },
+                h("div", { className:"tier-card-title", title:anime.title }, anime.title),
+                h("div", { className:"star-row", style:{fontSize:"13px"} },
+                  [1,2,3,4,5].map(i => h("span", { key:i, style:{opacity: (ratings[anime.id]||0) >= i ? 1 : 0.2} }, "⭐"))
+                )
+              )
+            )
+          )
+        )
+      )
+    ),
+    byStars[0].length > 0 && h("div", { className:"no-rating-section" },
+      h("div", { className:"no-rating-title" }, "Non notés (" + byStars[0].length + ")"),
+      h("div", { className:"tier-grid" },
+        byStars[0].map(anime =>
+          h("div", { key:anime.id, className:"tier-card" },
+            h("div", { className:"tier-card-art", style:{cursor:"pointer"}, onClick:()=>setRatingTarget(anime) },
+              anime.image
+                ? h("img", { src:anime.image, alt:anime.title, loading:"lazy" })
+                : h("div", { className:"placeholder" }, h("span", null, "🎬"), h("span", null, anime.title))
+            ),
+            h("div", { className:"tier-card-body" },
+              h("div", { className:"tier-card-title", title:anime.title }, anime.title),
+              h("div", { className:"star-row", style:{fontSize:"13px"} },
+                [1,2,3,4,5].map(i => h("span", { key:i, style:{opacity:0.2} }, "⭐"))
+              )
+            )
+          )
+        )
+      )
+    ),
+    ratingTarget && h(RatingPopup, {
+      anime: ratingTarget,
+      rating: ratings[ratingTarget.id] || 0,
+      onRate: s => saveRating(ratingTarget.id, s),
+      onClose: () => setRatingTarget(null)
+    })
+  );
+}
+
+const THEMES = [
+  { id:"black",   label:"Noir",      paper:"#000000", paper2:"#0a0a0a", rule:"#1a1a1a", accent:"#d98e3a", ink:"#ffffff" },
+  { id:"white",   label:"Blanc",     paper:"#ffffff", paper2:"#f0f0f0", rule:"#d0d0d0", accent:"#1a1a1a", ink:"#111111" },
+  { id:"dark",    label:"Sombre",    paper:"#14110f", paper2:"#1c1815", rule:"#3a322b", accent:"#d98e3a", ink:"#f1ebe0" },
+  { id:"midnight",label:"Minuit",    paper:"#0a0e1a", paper2:"#111827", rule:"#1e2a3a", accent:"#6366f1", ink:"#e8eaf6" },
+  { id:"forest",  label:"Forêt",     paper:"#0d1a0f", paper2:"#132015", rule:"#1e3a22", accent:"#4ade80", ink:"#e8f5e9" },
+  { id:"crimson", label:"Cramoisi",  paper:"#150a0a", paper2:"#1e1010", rule:"#3a1a1a", accent:"#ef4444", ink:"#fce8e8" },
+  { id:"ocean",   label:"Océan",     paper:"#070f1a", paper2:"#0d1a2e", rule:"#1a2e42", accent:"#38bdf8", ink:"#e0f2fe" },
+  { id:"purple",  label:"Violet",    paper:"#0f0a1a", paper2:"#1a1028", rule:"#2e1a42", accent:"#a855f7", ink:"#f3e8ff" },
+  { id:"rose",    label:"Rose",      paper:"#1a0a10", paper2:"#2a1018", rule:"#3a1a28", accent:"#f472b6", ink:"#fce8f3" },
+  { id:"light",   label:"Clair",     paper:"#f5f0e8", paper2:"#ece7df", rule:"#d4cec6", accent:"#b45309", ink:"#1c1815" },
+];
+
+function applyTheme(theme) {
+  const root = document.documentElement;
+  root.style.setProperty("--paper",   theme.paper);
+  root.style.setProperty("--paper-2", theme.paper2);
+  root.style.setProperty("--rule",    theme.rule);
+  root.style.setProperty("--accent",  theme.accent);
+  root.style.setProperty("--ink",     theme.ink);
+  document.body.style.background = theme.paper;
+  try { localStorage.setItem("anime-theme", theme.id); } catch {}
+}
+
+function ThemePicker({ onClose }) {
+  const [current, setCurrent] = useState(() => localStorage.getItem("anime-theme") || "dark");
+  const select = (t) => { setCurrent(t.id); applyTheme(t); };
+  return h("div", { className:"theme-overlay", onClick:onClose },
+    h("div", { className:"theme-sheet", onClick:e=>e.stopPropagation() },
+      h("div", { className:"theme-handle" }),
+      h("div", { className:"theme-title" }, "🎨 Couleur du fond"),
+      h("div", { className:"theme-grid" },
+        THEMES.map(t => h("div", { key:t.id, className:"theme-swatch", onClick:()=>select(t) },
+          h("div", {
+            className: "theme-circle" + (current===t.id ? " active" : ""),
+            style:{ background:`linear-gradient(135deg, ${t.paper2}, ${t.accent})` }
+          }),
+          h("span", null, t.label)
+        ))
+      )
+    )
+  );
+}
+
+function App() {
+  const [items, setItems] = useState(loadInitial);
+  useEffect(() => {
+    const saved = localStorage.getItem("anime-theme");
+    if (saved) { const t = THEMES.find(x => x.id === saved); if (t) applyTheme(t); }
+  }, []);
+  const [page, setPage] = useState("list");
+  const [showTheme, setShowTheme] = useState(false);
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [detailTarget, setDetailTarget] = useState(null);
+  const [justSaved, setJustSaved] = useState(false);
+  const [newSeasons, setNewSeasons] = useState([]);
+  const { canInstall, install } = useInstallPrompt();
+
+  useImageQueue(items, setItems);
+
+  // Auto-check for new seasons on load
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      const updates = await checkForUpdates(items);
+      if (updates.length > 0) setNewSeasons(updates);
+    }, 8000); // wait 8s after load so image queue gets priority
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      setJustSaved(true);
+      const t = setTimeout(()=>setJustSaved(false), 1200);
+      return ()=>clearTimeout(t);
+    } catch(e) {}
+  }, [items]);
+
+  const toggleStatus = id => setItems(prev => prev.map(a => {
+    if(a.id!==id) return a;
+    const order=["unknown","todo","done"];
+    return {...a, status: order[(order.indexOf(a.status)+1)%3]};
+  }));
+
+  const removeItem = id => setItems(prev => prev.filter(a=>a.id!==id));
+  const addItem = item => setItems(prev=>[item,...prev]);
+
+  const saveEdit = (id, changes) => setItems(prev => prev.map(a => a.id===id ? {...a,...changes} : a));
+
+  const applySeasonUpdates = () => {
+    setItems(prev => prev.map(a => {
+      const upd = newSeasons.find(u => u.id === a.id);
+      if (!upd) return a;
+      return { ...a, totalSeasons: upd.newSeasons, episodes: upd.newEpisodes || a.episodes, image: upd.image || a.image, imageState: "done" };
+    }));
+    setNewSeasons([]);
+  };
+
+  const counts = useMemo(()=>{
+    const c={all:items.length,done:0,todo:0,unknown:0};
+    items.forEach(a=>c[a.status]++);
+    return c;
+  },[items]);
+
+  const filtered = useMemo(()=>{
+    let list=[...items];
+    if(filter!=="all") list=list.filter(a=>a.status===filter);
+    if(search.trim()){const q=search.toLowerCase();list=list.filter(a=>a.title.toLowerCase().includes(q));}
+    list.sort((a,b)=>a.title.localeCompare(b.title,"fr",{sensitivity:"base"}));
+    return list;
+  },[items,filter,search]);
+
+  return h("div", null,
+    page === "tierlist" && h(TierListPage, { items }),
+    page === "list" && h("div",{className:"wrap"},
+    newSeasons.length > 0 && h("div",{className:"update-banner"},
+      h("div",{className:"update-banner-title"},
+        h("span",null, `🎉 ${newSeasons.length} nouvelle${newSeasons.length>1?"s":""} saison${newSeasons.length>1?"s":""} disponible${newSeasons.length>1?"s":""}!`),
+        h("button",{className:"update-dismiss",onClick:()=>setNewSeasons([])},"✕")
+      ),
+      h("div",{className:"update-list"},
+        newSeasons.map(u => h("div",{key:u.id,className:"update-item"},
+          u.image && h("img",{src:u.image,alt:""}),
+          h("div",{className:"update-item-info"},
+            h("span",{className:"update-item-title"},u.title),
+            h("span",{className:"update-item-detail"},`S${u.oldSeasons} → S${u.newSeasons}${u.newEpisodes?" · "+u.newEpisodes+" éps":""}`)
+          )
+        ))
+      ),
+      h("button",{className:"update-apply-btn",onClick:applySeasonUpdates},"✅ Mettre à jour ma liste")
+    ),
+    h("div",{className:"top-bar"},
+      h("div",null,
+        h("div",{className:"eyebrow"},"Carnet de visionnage"),
+        h("h1",null,"Ma liste animé"),
+        h("div",{className:`save-indicator${justSaved?" saved":""}`}, justSaved?"✓ Sauvegardé":"")
+      ),
+      h("div",{className:"top-btns"},
+        canInstall && h("button",{className:"install-btn", onClick:install}, "📲 Installer"),
+        h("button",{className:"refresh-btn",onClick:()=>setShowTheme(true)}, "🎨"),
+        h("button",{className:"refresh-btn",onClick:()=>setItems(prev=>prev.map(a=>({...a,imageState:"idle",episodes:null,airing:false})))}, "🔄"),
+        h("button",{className:"add-trigger",onClick:()=>setShowAdd(true)},"+  Ajouter")
+      )
+    ),
+    h("div",{className:"stats-row"},
+      h("div",{className:"stat"},h("span",{className:"stat-num"},counts.all),h("span",{className:"stat-label"},"Total")),
+      h("div",{className:"stat"},h("span",{className:"stat-num",style:{color:STATUS_META.done.color}},counts.done),h("span",{className:"stat-label"},"À jour")),
+      h("div",{className:"stat"},h("span",{className:"stat-num",style:{color:STATUS_META.todo.color}},counts.todo),h("span",{className:"stat-label"},"À voir")),
+      h("div",{className:"stat"},h("span",{className:"stat-num",style:{color:STATUS_META.unknown.color}},counts.unknown),h("span",{className:"stat-label"},"Non noté"))
+    ),
+    h("div",{className:"controls"},
+      h("div",{className:"filter-tabs"},
+        ["all","done","todo","unknown"].map(f=>h("button",{key:f,className:`tab${filter===f?" active":""}`,onClick:()=>setFilter(f)},
+          `${f==="all"?"Tous":STATUS_META[f].label} (${counts[f]})`))
+      ),
+      h("div",{className:"search-add-row"},
+        h("input",{className:"search-input",placeholder:"Rechercher...",value:search,onChange:e=>setSearch(e.target.value)})
+      )
+    ),
+    filtered.length>0
+      ? h("div",{className:"grid"},filtered.map(anime=>h(AnimeCard,{key:anime.id,anime,onToggleStatus:toggleStatus,onRemove:removeItem,onEdit:setEditTarget,onAskDelete:setDeleteTarget,onDetail:setDetailTarget})))
+      : h("div",{className:"empty-state"},"Aucun animé ne correspond à ta recherche."),
+    showAdd && h(AddPanel,{onAdd:addItem,onClose:()=>setShowAdd(false)}),
+    showTheme && h(ThemePicker,{onClose:()=>setShowTheme(false)}),
+    detailTarget && h(DetailPanel,{anime:detailTarget,onClose:()=>setDetailTarget(null),onEdit:setEditTarget,onToggleStatus:toggleStatus}),
+    editTarget && h(EditPanel,{anime:editTarget,onSave:saveEdit,onClose:()=>setEditTarget(null)}),
+    deleteTarget && h(DeleteConfirm,{
+      anime:deleteTarget,
+      onConfirm:()=>{ removeItem(deleteTarget.id); setDeleteTarget(null); },
+      onCancel:()=>setDeleteTarget(null)
+    })
+    ),
+    h("nav", { className:"bottom-nav" },
+      h("button", { className:`nav-btn${page==="list"?" active":""}`, onClick:()=>setPage("list") },
+        h("span", { className:"nav-icon" }, "🗂️"),
+        "Ma liste"
+      ),
+      h("button", { className:`nav-btn${page==="tierlist"?" active":""}`, onClick:()=>setPage("tierlist") },
+        h("span", { className:"nav-icon" }, "⭐"),
+        "Tier List"
+      )
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>
+</body>
+</html>
